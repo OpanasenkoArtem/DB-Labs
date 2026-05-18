@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model address {
+  id        Int     @id @default(autoincrement())
+  street    String  @db.VarChar(200)
+  city_id   Int
+  client_id Int
+  city      city    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_address_city")
+  client    client  @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_address_client")
+  order     order[]
+}
+
+model category {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique @db.VarChar(100)
+  product product[]
+}
+
+model city {
+  id      Int       @id @default(autoincrement())
+  city    String    @db.VarChar(100)
+  country String    @db.VarChar(100)
+  address address[]
+
+  @@unique([city, country])
+}
+
+model client {
+  id      Int       @id @default(autoincrement())
+  name    String    @db.VarChar(100)
+  phone   String?   @db.VarChar(20)
+  email   String?   @db.VarChar(100)
+  address address[]
+  order   order[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order {
+  id            Int             @id @default(autoincrement())
+  order_date    DateTime        @db.Date
+  status        String          @db.VarChar(50)
+  address_id    Int
+  client_id     Int
+  address       address         @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_address")
+  client        client          @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_client")
+  order_details order_details[]
+  payment       payment?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_details {
+  id         Int     @id @default(autoincrement())
+  quantity   Int
+  price      Decimal @db.Decimal(10, 2)
+  order_id   Int
+  product_id Int
+  order      order   @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orderdetails_order")
+  product    product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orderdetails_product")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payment {
+  id       Int      @id @default(autoincrement())
+  amount   Decimal  @db.Decimal(10, 2)
+  method   String   @db.VarChar(50)
+  status   String   @db.VarChar(50)
+  date     DateTime @db.Date
+  order_id Int      @unique
+  order    order    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_payment_order")
+}
+
+model product {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(200)
+  price         Decimal         @db.Decimal(10, 2)
+  description   String?
+  category_id   Int
+  order_details order_details[]
+  category      category        @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_category")
+}
